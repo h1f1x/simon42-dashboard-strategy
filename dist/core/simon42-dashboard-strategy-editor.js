@@ -9,7 +9,8 @@ import {
   attachSearchCardCheckboxListener,
   attachSummaryViewsCheckboxListener,
   attachRoomViewsCheckboxListener,
-  attachGroupByFloorsCheckboxListener, // NEU
+  attachGroupByFloorsCheckboxListener,
+  attachCoversViewCheckboxListener,
   attachCoversSummaryCheckboxListener,
   attachAreaCheckboxListeners,
   attachDragAndDropListeners,
@@ -69,6 +70,7 @@ class Simon42DashboardStrategyEditor extends HTMLElement {
     const showRoomViews = this._config.show_room_views === true; // Standard: false
     const groupByFloors = this._config.group_by_floors === true; // NEU
     const showCoversSummary = this._config.show_covers_summary !== false;
+    const showCoversView = this._config.show_covers_view !== false;
     const summariesColumns = this._config.summaries_columns || 2;
     const alarmEntity = this._config.alarm_entity || '';
     const favoriteEntities = this._config.favorite_entities || [];
@@ -116,8 +118,9 @@ class Simon42DashboardStrategyEditor extends HTMLElement {
         favoriteEntities,
         roomPinEntities,
         allEntities,
-        groupByFloors, // NEU
-        showCoversSummary
+        groupByFloors,
+        showCoversSummary,
+        showCoversView
       })}
     `;
 
@@ -127,7 +130,8 @@ class Simon42DashboardStrategyEditor extends HTMLElement {
     attachSearchCardCheckboxListener(this, (showSearchCard) => this._showSearchCardChanged(showSearchCard));
     attachSummaryViewsCheckboxListener(this, (showSummaryViews) => this._showSummaryViewsChanged(showSummaryViews));
     attachRoomViewsCheckboxListener(this, (showRoomViews) => this._showRoomViewsChanged(showRoomViews));
-    attachGroupByFloorsCheckboxListener(this, (groupByFloors) => this._groupByFloorsChanged(groupByFloors)); // NEU
+    attachGroupByFloorsCheckboxListener(this, (groupByFloors) => this._groupByFloorsChanged(groupByFloors));
+    attachCoversViewCheckboxListener(this, (showCoversView) => this._showCoversViewChanged(showCoversView));
     attachCoversSummaryCheckboxListener(this, (showCoversSummary) => this._showCoversSummaryChanged(showCoversSummary));
     this._attachSummariesColumnsListener();
     this._attachAlarmEntityListener();
@@ -870,6 +874,25 @@ class Simon42DashboardStrategyEditor extends HTMLElement {
     // Wenn der Standardwert (false) gesetzt ist, entfernen wir die Property
     if (groupByFloors === false) {
       delete newConfig.group_by_floors;
+    }
+
+    this._config = newConfig;
+    this._fireConfigChanged(newConfig);
+  }
+
+  _showCoversViewChanged(showCoversView) {
+    if (!this._config || !this._hass) {
+      return;
+    }
+
+    const newConfig = {
+      ...this._config,
+      show_covers_view: showCoversView
+    };
+
+    // Wenn der Standardwert (true) gesetzt ist, entfernen wir die Property
+    if (showCoversView === true) {
+      delete newConfig.show_covers_view;
     }
 
     this._config = newConfig;

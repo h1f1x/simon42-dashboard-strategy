@@ -3,7 +3,7 @@
 // ====================================================================
 // HTML-Template für den Dashboard Strategy Editor
 
-export function renderEditorHTML({ allAreas, hiddenAreas, areaOrder, showEnergy, showWeather, showSummaryViews, showRoomViews, showSearchCard, hasSearchCardDeps, summariesColumns, alarmEntity, alarmEntities, favoriteEntities, roomPinEntities, allEntities, groupByFloors, showCoversSummary }) {
+export function renderEditorHTML({ allAreas, hiddenAreas, areaOrder, showEnergy, showWeather, showSummaryViews, showRoomViews, showSearchCard, hasSearchCardDeps, summariesColumns, alarmEntity, alarmEntities, favoriteEntities, roomPinEntities, allEntities, groupByFloors, showCoversSummary, showCoversView }) {
   return `
     <div class="card-config">
       <div class="section">
@@ -179,6 +179,17 @@ export function renderEditorHTML({ allAreas, hiddenAreas, areaOrder, showEnergy,
         </div>
         <div class="description">
           Zeigt die einzelnen Raum-Views in der oberen Navigation an.
+        </div>
+        <div class="form-row">
+          <input
+            type="checkbox"
+            id="show-covers-view"
+            ${showCoversView !== false ? 'checked' : ''}
+          />
+          <label for="show-covers-view">Rollos & Vorhänge View anzeigen</label>
+        </div>
+        <div class="description">
+          Zeigt die Rollos & Vorhänge View im Dashboard an. Wenn deaktiviert, wird die View komplett ausgeblendet.
         </div>
       </div>
 

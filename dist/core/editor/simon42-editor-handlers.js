@@ -59,6 +59,15 @@ export function attachGroupByFloorsCheckboxListener(element, callback) {
   }
 }
 
+export function attachCoversViewCheckboxListener(element, callback) {
+  const coversViewCheckbox = element.querySelector('#show-covers-view');
+  if (coversViewCheckbox) {
+    coversViewCheckbox.addEventListener('change', (e) => {
+      callback(e.target.checked);
+    });
+  }
+}
+
 export function attachCoversSummaryCheckboxListener(element, callback) {
   const coversSummaryCheckbox = element.querySelector('#show-covers-summary');
   if (coversSummaryCheckbox) {

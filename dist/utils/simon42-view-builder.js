@@ -26,7 +26,9 @@ export function createOverviewView(sections, personBadges) {
  * Erstellt die Utility-Views (Lichter, Covers, Security, Batterien)
  */
 export function createUtilityViews(entities, showSummaryViews = false, config = {}) {
-  return [
+  const showCoversView = config.show_covers_view !== false;
+
+  const views = [
     {
       title: "Lichter",
       path: "lights",
@@ -37,8 +39,11 @@ export function createUtilityViews(entities, showSummaryViews = false, config = 
         entities,
         config // Übergebe config für areas_options Filterung
       }
-    },
-    {
+    }
+  ];
+
+  if (showCoversView) {
+    views.push({
       title: "Rollos & Vorhänge",
       path: "covers",
       icon: "mdi:blinds-horizontal",
@@ -49,7 +54,10 @@ export function createUtilityViews(entities, showSummaryViews = false, config = 
         device_classes: ["awning", "blind", "curtain", "shade", "shutter", "window"],
         config // Übergebe config für areas_options Filterung
       }
-    },
+    });
+  }
+
+  views.push(
     {
       title: "Sicherheit",
       path: "security",
@@ -72,7 +80,9 @@ export function createUtilityViews(entities, showSummaryViews = false, config = 
         config // Übergebe config für areas_options Filterung
       }
     }
-  ];
+  );
+
+  return views;
 }
 
 /**
