@@ -1,8 +1,9 @@
 // ====================================================================
-// SIMON42 SCENE CARD - Persistent Scene Save/Restore
+// SIMON42 SCENE CARD - Scene Save/Restore
 // ====================================================================
-// Speichert den aktuellen Zustand von Licht-Entitäten als persistente
-// Szene über die HA Config API (überlebt Neustarts).
+// Speichert den aktuellen Zustand von Licht-Entitäten als Szene.
+// Nutzt scene.create (snapshot) als Standard-Methode.
+// Falls die Config-API verfügbar ist, werden Szenen persistent gespeichert.
 // ====================================================================
 
 class Simon42SceneCard extends HTMLElement {
@@ -11,6 +12,7 @@ class Simon42SceneCard extends HTMLElement {
     this._hass = null;
     this._config = null;
     this._rendered = false;
+    this._configApiAvailable = null; // null = unknown, true/false after check
   }
 
   setConfig(config) {
@@ -18,6 +20,7 @@ class Simon42SceneCard extends HTMLElement {
       throw new Error("simon42-scene-card requires area_id, area_name, and entities");
     }
     this._config = config;
+    this._sceneId = config.area_id + '_lichtstimmung';
     this._sceneName = config.area_name + ' Lichtstimmung';
   }
 
@@ -99,42 +102,54 @@ class Simon42SceneCard extends HTMLElement {
     this.querySelector('#restore-btn').addEventListener('click', () => this._restoreScene());
   }
 
-  _collectLightStates() {
-    const entities = {};
-    const captureAttrs = [
-      'brightness', 'color_temp', 'color_temp_kelvin',
-      'rgb_color', 'rgbw_color', 'rgbww_color',
-      'hs_color', 'xy_color', 'color_mode', 'effect'
-    ];
-
-    for (const entityId of this._config.entities) {
-      const state = this._hass.states[entityId];
-      if (!state) continue;
-
-      const entry = { state: state.state };
-
-      if (state.state === 'on') {
-        for (const attr of captureAttrs) {
-          if (state.attributes[attr] !== undefined && state.attributes[attr] !== null) {
-            entry[attr] = state.attributes[attr];
-          }
-        }
-      }
-
-      entities[entityId] = entry;
-    }
-
-    return entities;
-  }
-
   _findExistingScene() {
-    // Suche eine existierende Szene anhand des Namens
-    for (const [entityId, state] of Object.entries(this._hass.states)) {
-      if (entityId.startsWith('scene.') && state.attributes?.friendly_name === this._sceneName) {
-        return { entityId, configId: state.attributes?.id };
+    // Suche eine existierende Szene anhand des scene_id
+    const expectedEntityId = 'scene.' + this._sceneId;
+    const state = this._hass.states[expectedEntityId];
+    if (state) {
+      return { entityId: expectedEntityId, configId: state.attributes?.id };
+    }
+    // Fallback: Suche nach Name
+    for (const [entityId, s] of Object.entries(this._hass.states)) {
+      if (entityId.startsWith('scene.') && s.attributes?.friendly_name === this._sceneName) {
+        return { entityId, configId: s.attributes?.id };
       }
     }
     return null;
+  }
+
+  async _checkConfigApi() {
+    if (this._configApiAvailable !== null) return this._configApiAvailable;
+    try {
+      await this._hass.callApi('GET', 'config/scene/config/nonexistent_check');
+      this._configApiAvailable = true;
+    } catch (e) {
+      // 404 on a specific ID means the API exists but the scene doesn't
+      // 404 on the base path means the API doesn't exist at all
+      this._configApiAvailable = e.status_code !== 404;
+    }
+    return this._configApiAvailable;
+  }
+
+  async _savePersistent(entities) {
+    const sceneConfig = {
+      name: this._sceneName,
+      entities: entities,
+      icon: 'mdi:lightbulb-group-outline'
+    };
+    const existing = this._findExistingScene();
+    if (existing?.configId) {
+      await this._hass.callApi('PUT', `config/scene/config/${existing.configId}`, sceneConfig);
+    } else {
+      await this._hass.callApi('POST', 'config/scene/config', sceneConfig);
+    }
+  }
+
+  async _saveViaService() {
+    await this._hass.callService('scene', 'create', {
+      scene_id: this._sceneId,
+      snapshot_entities: this._config.entities
+    });
   }
 
   async _saveScene() {
@@ -142,19 +157,33 @@ class Simon42SceneCard extends HTMLElement {
     const originalText = btn.querySelector('span').textContent;
 
     try {
-      const entities = this._collectLightStates();
-      const sceneConfig = {
-        name: this._sceneName,
-        entities: entities,
-        icon: 'mdi:lightbulb-group-outline'
-      };
+      const configApiAvailable = await this._checkConfigApi();
 
-      const existing = this._findExistingScene();
-
-      if (existing?.configId) {
-        await this._hass.callApi('PUT', `config/scene/config/${existing.configId}`, sceneConfig);
+      if (configApiAvailable) {
+        // Persistent: über Config API
+        const entities = {};
+        const captureAttrs = [
+          'brightness', 'color_temp', 'color_temp_kelvin',
+          'rgb_color', 'rgbw_color', 'rgbww_color',
+          'hs_color', 'xy_color', 'color_mode', 'effect'
+        ];
+        for (const entityId of this._config.entities) {
+          const state = this._hass.states[entityId];
+          if (!state) continue;
+          const entry = { state: state.state };
+          if (state.state === 'on') {
+            for (const attr of captureAttrs) {
+              if (state.attributes[attr] !== undefined && state.attributes[attr] !== null) {
+                entry[attr] = state.attributes[attr];
+              }
+            }
+          }
+          entities[entityId] = entry;
+        }
+        await this._savePersistent(entities);
       } else {
-        await this._hass.callApi('POST', 'config/scene/config', sceneConfig);
+        // Fallback: scene.create service (nicht persistent)
+        await this._saveViaService();
       }
 
       btn.classList.add('success');
@@ -182,7 +211,7 @@ class Simon42SceneCard extends HTMLElement {
 
       if (!existing) {
         btn.classList.add('error');
-        btn.querySelector('span').textContent = 'Keine Szene gefunden';
+        btn.querySelector('span').textContent = 'Erst speichern!';
         setTimeout(() => {
           btn.classList.remove('error');
           btn.querySelector('span').textContent = originalText;
