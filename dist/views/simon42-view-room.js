@@ -34,7 +34,8 @@ class Simon42ViewRoomStrategy {
       vacuum: [],
       fan: [],
       switches: [],
-      cameras: [] // NEU: Kameras
+      motion: [],
+      cameras: []
     };
 
     // Sensor-Kategorien für Badges
@@ -217,7 +218,7 @@ class Simon42ViewRoomStrategy {
       if (domain === 'binary_sensor') {
         // Bewegung
         if (deviceClass === 'motion') {
-          sensorEntities.motion.push(entityId);
+          roomEntities.motion.push(entityId);
           continue;
         }
         // Präsenz
@@ -264,7 +265,8 @@ class Simon42ViewRoomStrategy {
     roomEntities.vacuum = applyGroupFilter('vacuum');
     roomEntities.fan = applyGroupFilter('fan');
     roomEntities.switches = applyGroupFilter('switches');
-    roomEntities.cameras = applyGroupFilter('cameras'); // NEU
+    roomEntities.motion = applyGroupFilter('motion');
+    roomEntities.cameras = applyGroupFilter('cameras');
 
     // === BADGES ERSTELLEN ===
     const badges = [];
@@ -358,7 +360,7 @@ class Simon42ViewRoomStrategy {
     }
 
     // Bewegung (zeige Badge nur wenn Bewegung erkannt)
-    const activeMotion = sensorEntities.motion.filter(id => {
+    const activeMotion = roomEntities.motion.filter(id => {
       const state = hass.states[id];
       return state && state.state === 'on';
     });
@@ -638,6 +640,28 @@ class Simon42ViewRoomStrategy {
             icon: "mdi:palette"
           },
           ...roomEntities.scenes.map(entity => ({
+            type: "tile",
+            entity: entity,
+            name: stripAreaName(entity, area, hass),
+            vertical: false,
+            state_content: "last_changed"
+          }))
+        ]
+      });
+    }
+
+    // Bewegungsmelder
+    if (roomEntities.motion.length > 0) {
+      sections.push({
+        type: "grid",
+        cards: [
+          {
+            type: "heading",
+            heading: "Bewegungsmelder",
+            heading_style: "title",
+            icon: "mdi:motion-sensor"
+          },
+          ...roomEntities.motion.map(entity => ({
             type: "tile",
             entity: entity,
             name: stripAreaName(entity, area, hass),

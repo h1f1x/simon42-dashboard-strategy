@@ -332,7 +332,8 @@ export function renderAreaEntitiesHTML(areaId, groupedEntities, hiddenEntities, 
     { key: 'scenes', label: 'Szenen', icon: 'mdi:palette' },
     { key: 'vacuum', label: 'Staubsauger', icon: 'mdi:robot-vacuum' },
     { key: 'fan', label: 'Ventilatoren', icon: 'mdi:fan' },
-    { key: 'switches', label: 'Schalter', icon: 'mdi:light-switch' }
+    { key: 'switches', label: 'Schalter', icon: 'mdi:light-switch' },
+    { key: 'motion', label: 'Bewegungsmelder', icon: 'mdi:motion-sensor' }
   ];
 
   let html = '<div class="entity-groups">';

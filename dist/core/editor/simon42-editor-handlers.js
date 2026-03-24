@@ -392,9 +392,10 @@ async function getAreaGroupedEntities(areaId, hass) {
     media_player: [],
     vacuum: [],
     fan: [],
-    switches: []
+    switches: [],
+    motion: []
   };
-  
+
   // Labels für Filterung
   const excludeLabels = entities
     .filter(e => e.labels?.includes("no_dboard"))
@@ -450,6 +451,9 @@ async function getAreaGroupedEntities(areaId, hass) {
     }
     else if (domain === 'switch') {
       roomEntities.switches.push(entity.entity_id);
+    }
+    else if (domain === 'binary_sensor' && deviceClass === 'motion') {
+      roomEntities.motion.push(entity.entity_id);
     }
   }
   
