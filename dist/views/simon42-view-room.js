@@ -525,7 +525,13 @@ class Simon42ViewRoomStrategy {
             vertical: false,
             features_position: "inline",
             state_content: "last_changed"
-          }))
+          })),
+          {
+            type: "custom:simon42-scene-card",
+            area_id: area.area_id,
+            area_name: area.name,
+            entities: roomEntities.lights
+          }
         ]
       });
     }
